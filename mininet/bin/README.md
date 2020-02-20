@@ -2,13 +2,13 @@
 
 ## Deployment in Amazon
 
-```
+```bash
 python3 bin/dmn --provision=aws --controller=lxcremote,ip=192.168.0.1
 ```
 
 With the possibility to overwrite default parameters:
 
-```
+```bash
 python3 bin/dmn --provision=aws,3,instanceType=t3.2xlarge,volumeSize=10 --controller=lxcremote,ip=192.168.0.1
 ```
 
@@ -20,7 +20,7 @@ size of 10 GiB.
 Specify the bastion address in the `ssh` section of the `~/.distrinet/conf.yml`
 file or using the `--bastion` option:
 
-```
+```bash
 python3 bin/dmn [--bastion <bastion_ip>] --workers="<ip1>,<ip2>,...,<ipn>" --custom=default_image.py
 ```
 
@@ -28,7 +28,7 @@ python3 bin/dmn [--bastion <bastion_ip>] --workers="<ip1>,<ip2>,...,<ipn>" --cus
 
 To connect to an already started controller:
 
-```
+```bash
 --controller=lxcremote,ip=<ip>
 ```
 
@@ -36,12 +36,11 @@ where
 
 * `<ip>` is an address reachable on the admin network where an OpenFlow controller listens
 
-```
+```bash
 --controller=onoslxc,ip=<ip>,[admin_ip=<admin_ip>,target=<target_ip>]
 ```
 
 where
-
 
 * `<ip>` is an address reachable on the admin network where an OpenFlow
   controller listens,
@@ -58,7 +57,7 @@ controller.
 To forward ports from bastion to a reachable machine, add an entry as follows
 in the `port_forwarding` section of the `~/.distrinet/conf.yml` file.
 
-```
+```bash
 port_forwarding:
   - local: <port number on which to listen>
     proto: '<protocol>'
@@ -69,7 +68,7 @@ port_forwarding:
 To forward ports from bastion to a container, add an entry as follows in the
 `port_forwarding` section of the `~/.distrinet/conf.yml` file.
 
-```
+```bash
 port_forwarding:
   - local: <port number on which to listen>
     proto: '<protocol>'
@@ -78,20 +77,18 @@ port_forwarding:
     remote: <port number on the listening>
 ```
 
-
-
 # Runing Hadoop tests
 
-```
+```bash
 --controller=lxcremote,ip=192.168.0.1 --custom hadoop_test.py --test hadoop
 ```
 
 ## Examples
 
-```
+```bash
 python3 bin/dmn --workers="10.0.0.200,10.0.1.31,10.0.1.76" --topo=tree,2 --controller=lxcremote,ip=192.168.0.1 --custom=default_image.py
 ```
 
-```
+```bash
 python3 bin/dmn --workers="10.0.0.200,10.0.1.31,10.0.1.76" --topo=tree,2 --controller=onoslxc,ip=192.168.0.250,admin_ip=192.168.0.250,target=10.0.0.200 --custom=default_image.py
 ```
