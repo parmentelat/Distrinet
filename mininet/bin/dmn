@@ -13,6 +13,7 @@ Example to pull custom params (topo, switch, etc.) from a file:
   mn --custom ~/mininet/custom/custom_example.py
 """
 from pathlib import Path
+# XXX - TPT -optparse is outdated - use argparse
 from optparse import OptionParser
 import json
 import os

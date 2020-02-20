@@ -6,6 +6,7 @@ import select
 from subprocess import Popen, PIPE
 from time import sleep
 
+# XXX - TPT - why import info if we redefine it later on ?
 from mininet.log import info, error, warn, debug
 from mininet.util import ( quietRun, errRun, errFail, moveIntf, isShellBuiltin,
                            numCores, retry, mountCgroups, BaseString, decode,
@@ -467,6 +468,7 @@ class LxcNode (Node):
             async def trick(shell, stdin):
                 while self.run:
                     c = await shell.stdout.read(n=1)
+                    # XXX - TPT - this will only work with ASCII anyways, right ?
                     os.write(stdin.fileno(), c.encode('utf-8'))
 
             # Spawn a shell subprocess in a pseudo-tty, to disable buffering
@@ -546,6 +548,17 @@ class LxcNode (Node):
         self.cleanup()
 
     # XXX - DSA - quick hack to deal with OpenSSH bug regarding signals...
+    # XXX - TPT - as far as I know upstream openssh has merged our patch on signals 
+    # and should now be in line with the RFC - in decently recent versions, that is
+    # besides the ord() business below looks very suspicious
+    # this code lacks the logic that turns an stty control character into a signal number
+    # mapping control-C (chr(3)) to -s 3  is WRONG
+    # in particular with this code sendInt actually sends QUIT and not INT 
+    # it is a lucky coincidence that control-C = 3 matches an existing signal number
+    # but what if we try to send control-\ = 28 (which would be the proper way to send QUIT)
+    # note that sendInt() in node.py uses a totally different method
+    # of writing the character on the terminal, so that in their code
+    # sending control-c really means INT
     async def _sendInt(self, intr):
         killcmd = 'kill -s {} -`pgrep -f "mininet:{}"`'.format(ord(intr), self.name)
         await self.ssh.conn.run(killcmd)
@@ -555,6 +568,9 @@ class LxcNode (Node):
         "Interrupt running command."
         debug( 'sendInt: writing chr(%d)\n' % ord( intr ) )
         task = self.loop.create_task(self._sendInt(intr))
+        # XXX - TPT - this here looks dubious as well; this is a synchroneous
+        # code that never lets the newly created task a chance to run anything
+        # so it's hard to see how it can ever complete
         while not task.done():
             time.sleep(0.0001)
         return task.result()

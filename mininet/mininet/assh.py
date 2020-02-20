@@ -6,6 +6,8 @@ import time
 
 from mininet.dutil import _info
 
+# XXX- TPT - why all the synchroneous time.sleep !?!? looks very wrong..
+
 class ASsh(object):
     def __init__(self, loop, host, port=22, username=None, bastion=None,
                        bastion_port=22, client_keys=None,

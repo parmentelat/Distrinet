@@ -41,6 +41,7 @@ class LxcController ( LxcNode ):
     def start( self ):
         """Start <controller> <args> on controller.
            Log to /tmp/cN.log"""
+        # XXX - TPT - what is pathCheck ? not visible from here
         pathCheck( self.command )
         cout = '/tmp/' + self.name + '.log'
         if self.cdir is not None:
@@ -194,6 +195,7 @@ class LxcRemoteController( object ):
                   " to %s:%d\n" % ( self.ip, self.port ))
 
     def cmd(self, cmd):
+        # XXX - TPT - you mean self.masternode, right ?
         return self.masterSsh.cmd(cmd)
 
     def isListening( self, ip, port ):
@@ -221,6 +223,7 @@ class LxcRemoteController( object ):
             self.__class__.__name__, self.name,
             self.IP(), self.port )
 
+    # XXX - TPT - you mean @classmethod, right ?
     def isAvailable( cls ):
         return True
 
