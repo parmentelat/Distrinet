@@ -181,12 +181,15 @@ class LxcNode (Node):
         # prepare the machine
         # SSH with the target
         if self.target:
-            self.targetSsh = ASsh(loop=self.loop, host=self.target, username=self.username, bastion=self.bastion, client_keys=self.client_keys)
+            self.targetSsh = ASsh(loop=self.loop, host=self.target, username=self.username, 
+                                  bastion=self.bastion, client_keys=self.client_keys)
         # SSH with the node
         admin_ip = self.admin_ip
         if "/" in admin_ip:
-                admin_ip, prefix = admin_ip.split("/")
-        self.ssh = ASsh(loop=self.loop, host=admin_ip, username=self.username, bastion=self.bastion, client_keys=self.client_keys)
+                # the prefix gets thrown away
+                admin_ip, _ = admin_ip.split("/")
+        self.ssh = ASsh(loop=self.loop, host=admin_ip, username=self.username, 
+                        bastion=self.bastion, client_keys=self.client_keys)
 
     def configureContainer(self, adminbr="admin-br", wait=True):
 #        # connect the node to the admin network
@@ -195,7 +198,8 @@ class LxcNode (Node):
         # connect the target to the admin network
 #        if not self.target in self.__class__.connectedToAdminNetwork:
 #            print (self.target, "not connected yet to admin")
-#            self.connectToAdminNetwork(master=self.masternode.host, target=self.target, link_id=CloudLink.newLinkId(), admin_br=adminbr)
+#            self.connectToAdminNetwork(master=self.masternode.host, target=self.target, 
+#                                       link_id=CloudLink.newLinkId(), admin_br=adminbr)
 #            self.__class__.connectedToAdminNetwork[self.target] = True
 #        else:
 #            print (self.target, "already connected to admin")
@@ -206,7 +210,8 @@ class LxcNode (Node):
         #       an admin IP address
         cmds.append("lxc exec {} -- ifconfig admin {}".format(self.name, self.admin_ip))
         #       a public key
-        cmds.append("lxc exec {} -- bash -c 'echo \"{}\" >> /root/.ssh/authorized_keys'".format(self.name, self.pub_id))
+        cmds.append("lxc exec {} -- bash -c 'echo \"{}\" >> /root/.ssh/authorized_keys'"
+                    .format(self.name, self.pub_id))
         #       a ssh server
         cmds.append("lxc exec {} -- service ssh start".format(self.name))
 
@@ -248,8 +253,9 @@ class LxcNode (Node):
                          vxlan_dst_port=4789, **params):
         """Add the link between 2 containers"""
         vxlan_name = "vx_{}".format(link_id)
-        cmds = self.createContainerLinkCommandList(target1, target2, link_id, vxlan_name, bridge1, bridge2,
-                                                           iface1=iface1, vxlan_dst_port=vxlan_dst_port, **params)
+        cmds = self.createContainerLinkCommandList(
+            target1, target2, link_id, vxlan_name, bridge1, bridge2,
+            iface1=iface1, vxlan_dst_port=vxlan_dst_port, **params)
 
         cmd = ';'.join(cmds)
         self.targetSsh.cmd(cmd)
@@ -261,7 +267,8 @@ class LxcNode (Node):
     def deleteContainerLink(self, link, **kwargs):
         self.targetSsh.cmd("ip link delete {}".format(self.containerLinks[link]))
 
-    def createContainerLinkCommandList(self, target1, target2, vxlan_id, vxlan_name, bridge1, bridge2, iface1=None,
+    def createContainerLinkCommandList(self, target1, target2, vxlan_id, vxlan_name, 
+                                       bridge1, bridge2, iface1=None,
                                        vxlan_dst_port=4789, **params):
         cmds = []
         if target1 != target2:
@@ -269,8 +276,9 @@ class LxcNode (Node):
             ip2 = self._findNameIP(target2)
             if ip1 == ip2:
                 return cmds
-            comm = "ip link add {} type vxlan id {} remote {} local {} dstport {}".format(vxlan_name, vxlan_id, ip2,
-                                                                                          ip1, vxlan_dst_port)
+            comm = ("ip link add {} type vxlan id {} remote {} local {} dstport {}"
+                    .format(vxlan_name, vxlan_id, ip2,
+                            ip1, vxlan_dst_port))
             if iface1:
                 comm += " dev {}".format(iface1)
 
@@ -285,7 +293,8 @@ class LxcNode (Node):
 
         else:
             if bridge1 != bridge2:
-                'the containers are in different bridge, we need to create 2 virtual interface to attach the two bridges'
+                # the containers are in different bridges,
+                # we need to create 2 virtual interfaces to attach the two bridges
                 v_if1 = "v{}".format(bridge1)
                 v_if2 = "v{}".format(bridge2)
                 cmds.append('ip link add {} type veth peer name {}'.format(v_if1, v_if2))
@@ -311,7 +320,8 @@ class LxcNode (Node):
 
             # locally
             # DSA - TODO - XXX beurk bridge2 = None
-            cmds = self.createContainerLinkCommandList(target, master, link_id, vxlan_name, bridge1=admin_br, bridge2=None)
+            cmds = self.createContainerLinkCommandList(target, master, link_id, vxlan_name,
+                                                       bridge1=admin_br, bridge2=None)
             cmd = ';'.join(cmds)
 
             if wait:
@@ -321,7 +331,8 @@ class LxcNode (Node):
 
             # on master
             # DSA - TODO - XXX beurk bridge2 = None
-            cmds = self.createContainerLinkCommandList(master, target, link_id, vxlan_name, bridge1=admin_br, bridge2=None)
+            cmds = self.createContainerLinkCommandList(master, target, link_id, vxlan_name,
+                                                       bridge1=admin_br, bridge2=None)
             cmd = ';'.join(cmds)
             self.devicesMaster.append(vxlan_name)
 
@@ -437,7 +448,8 @@ class LxcNode (Node):
             self.createContainer(**self.params)
             self.waitCreated()
             self.addContainerInterface(intfName="admin", brname="admin-br")
-            self.connectToAdminNetwork(master=self.masternode.host, target=self.target, link_id=CloudLink.newLinkId(), admin_br="admin-br")
+            self.connectToAdminNetwork(master=self.masternode.host, target=self.target,
+                                       link_id=CloudLink.newLinkId(), admin_br="admin-br")
 
             self.configureContainer()
             self.connect()
@@ -463,7 +475,8 @@ class LxcNode (Node):
             self.master, self.slave = pty.openpty()
 
             bash = "bash --rcfile <( echo 'PS1=\x7f') --noediting -is mininet:{}".format(self.name)
-            self.shell = await self.ssh.conn.create_process(bash, stdin=self.slave, stdout=self.slave, stderr=self.slave)
+            self.shell = await self.ssh.conn.create_process(bash, stdin=self.slave, 
+                                                            stdout=self.slave, stderr=self.slave)
 
             self.stdin = os.fdopen(self.master, 'r')
             self.stdout = self.stdin
