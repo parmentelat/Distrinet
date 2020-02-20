@@ -24,13 +24,17 @@ import time
 
 from mininet.assh import ASsh
 
-# XXX TODO DSA - make it clean
 # #####################
-intfnum=0
-def genIntfName():
-    global intfnum
-    intfnum = intfnum + 1
-    return "intf{}".format(intfnum)
+class InterfaceEnumerator:
+    
+    def __init__(self):
+        self.index = 0
+    def generate(self):
+        self.index += 1
+        return "intf{}".format(self.index)
+
+# XXX - TPT - it feels like this could/should be made a member of LxcNode
+interface_enumerator = InterfaceEnumerator()
 
 from mininet.node import Node
 from mininet.cloudlink import CloudLink
@@ -389,9 +393,9 @@ class LxcNode (Node):
         associated to the bridge named name-intfName-br on the host
         """
         if devicename is None:
-            devicename = genIntfName()
+            devicename = interface_enumerator.generate()
         if brname is None:
-            brname = genIntfName()
+            brname = interface_enumerator.generate()
         cmds = []
         cmds.append("brctl addbr {}".format(brname))
         cmds.append("lxc network attach {} {} {} {}".format(brname, self.name, devicename, intfName))
