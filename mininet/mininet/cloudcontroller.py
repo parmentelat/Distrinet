@@ -1,8 +1,8 @@
-from mininet.log import lg, LEVELS, info, debug, warn, error, output
+from mininet.log import info, warn #, lg, LEVELS, debug, error, output
 
 from mininet.lxc_container import (LxcNode)
 
-from mininet.dutil import _info
+# from mininet.dutil import _info
 
 
 class LxcController (LxcNode):

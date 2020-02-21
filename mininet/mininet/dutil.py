@@ -1,5 +1,5 @@
 from mininet.provision.provision import Provision
-from mininet.log import info, error, debug, output, warn
+from mininet.log import info #, error, debug, output, warn
 
 
 def _info(*args, **kwargs):

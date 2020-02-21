@@ -1,5 +1,5 @@
 from mininet.cli import CLI
-from mininet.log import info, output, error
+from mininet.log import output, error #, info
 
 
 class DCLI(CLI):

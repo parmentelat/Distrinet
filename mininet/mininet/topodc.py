@@ -11,7 +11,7 @@
 # LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
-from mininet.log import info, debug, warn, error, output
+from mininet.log import info #, debug, warn, error, output
 from mininet.topo import (irange, Topo, SingleSwitchTopo)
 
 # == Utils ===================================================================
@@ -72,7 +72,7 @@ class SpineAndLeafTopo(Topo):
         return name
 
     def build(self, k=2, **_opts):
-        if k % 2 is not 0:
+        if k % 2 != 0:
             raise Exception("k must be a multiple of 2")
 
         self.k = k
@@ -135,7 +135,7 @@ class FatTreeTopo(Topo):
 
     def build(self, k=2, **_opts):
         # only even numbers are allowed for k
-        if k % 2 is not 0:
+        if k % 2 != 0:
             raise Exception("k must be a multiple of 2")
 
         self.k = k

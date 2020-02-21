@@ -2,23 +2,25 @@ from mininet.cloudlink import CloudLink
 from mininet.node import Node
 from mininet.assh import ASsh
 import time
-from threading import Thread
-import asyncio
+# from threading import Thread
+# import asyncio
 import os
 import pty
 import re
-import signal
+# import signal
 import select
-from subprocess import Popen, PIPE
-from time import sleep
+from subprocess import PIPE #, Popen
+# from time import sleep
 
 # XXX - TPT - why import info if we redefine it later on ?
-from mininet.log import info, error, warn, debug
-from mininet.util import (quietRun, errRun, errFail, moveIntf, isShellBuiltin,
-                          numCores, retry, mountCgroups, BaseString, decode,
-                          encode, getincrementaldecoder, Python3, which)
-from mininet.moduledeps import moduleDeps, pathCheck, TUN
-from mininet.link import Link, Intf, TCIntf, OVSIntf
+from mininet.log import error, debug #, info, warn
+from mininet.util import (BaseString,
+#                          quietRun, errRun, errFail, moveIntf, isShellBuiltin,
+#                          numCores, retry, mountCgroups, decode,
+#                         encode, getincrementaldecoder, Python3, which
+)
+# from mininet.moduledeps import moduleDeps, pathCheck, TUN
+# from mininet.link import Link, Intf, TCIntf, OVSIntf
 
 
 def info(*args, **kwargs):

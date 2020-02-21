@@ -88,27 +88,30 @@ method may be called to shut down the network.
 
 from mininet.net import Mininet
 import os
-import re
-import select
+# import re
+# import select
 import signal
-import random
+# import random
 
 from time import sleep
-from itertools import chain, groupby
+# from itertools import groupby, chain
 from math import ceil
 
 from mininet.cli import CLI
-from mininet.log import info, error, debug, output, warn
-from mininet.node import (Node, Host, OVSKernelSwitch, DefaultController,
+from mininet.log import info, error, output #, warn, debug
+from mininet.node import (Node,
+                          # Host, OVSKernelSwitch, DefaultController,
                           Controller)
 from mininet.nodelib import NAT
 #from mininet.link import Link, Intf
-from mininet.util import (quietRun, fixLimits, numCores, ensureRoot,
+from mininet.util import (quietRun, 
                           macColonHex, ipStr, ipParse, netParse, ipAdd,
-                          waitListening, BaseString, encode)
+                          BaseString,
+#                          waitListening, encode, fixLimits, numCores, ensureRoot
+                          )
 from mininet.term import cleanUpScreens, makeTerms
 
-from mininet.link import (Intf, TCIntf)
+from mininet.link import TCIntf #, Intf
 
 # DSA ########################
 from mininet.dutil import _info

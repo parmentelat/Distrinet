@@ -1,15 +1,13 @@
 from mininet.lxc_container import (LxcNode)
-from mininet.link import Intf
 
-from mininet.link import Link, Intf, TCIntf, OVSIntf
-from mininet.log import info, error, warn, debug
+from mininet.link import Intf, TCIntf, OVSIntf #, Link
+from mininet.log import debug, info #, warn, , error
 
 from distutils.version import StrictVersion
 
-from re import findall
+# from re import findall
 import re
-
-import time
+# import time
 
 
 class LxcSwitch(LxcNode):
@@ -298,7 +296,7 @@ class LxcOVSSwitch(LxcSwitch):
         run('ovs-vsctl ' +
             ' -- '.join(delcmd % s for s in switches))
         # Next, shut down all of the processes
-        pids = ' '.join(str(switch.pid) for switch in switches)
+        _ = ' '.join(str(switch.pid) for switch in switches)
 ##        run( 'kill -HUP ' + pids )
         for switch in switches:
             switch.terminate()

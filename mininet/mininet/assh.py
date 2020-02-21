@@ -1,5 +1,5 @@
 from subprocess import PIPE
-from mininet.log import info, error, debug, output, warn
+from mininet.log import error #, info, debug, output, warn
 import asyncio
 import asyncssh
 from functools import partial
@@ -120,7 +120,7 @@ class ASsh(object):
             # wait fot th tunnel to be created
             self.waitTunneled()
 
-        task = self.loop.create_task(self._connect(
+        _ = self.loop.create_task(self._connect(
             host=self.connection_host, port=self.connection_port))
 
     async def _connect(self, host, port):

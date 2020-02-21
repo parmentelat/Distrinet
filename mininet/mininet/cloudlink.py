@@ -24,10 +24,10 @@ TCIntf: interface with bandwidth limiting and delay via tc
 Link: basic link class for creating veth pairs
 """
 
-from mininet.log import info, error, debug
-import re
+# from mininet.log import info, error, debug
+# import re
 
-from mininet.link import(Intf, TCIntf, Link, TCLink)
+from mininet.link import TCIntf, Link #, Intf, TCLink
 
 
 class CloudLink(Link):
