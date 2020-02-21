@@ -86,6 +86,7 @@ method may be called to shut down the network.
 
 """
 
+from mininet.net import Mininet
 import os
 import re
 import select
@@ -98,13 +99,13 @@ from math import ceil
 
 from mininet.cli import CLI
 from mininet.log import info, error, debug, output, warn
-from mininet.node import ( Node, Host, OVSKernelSwitch, DefaultController,
-                           Controller )
+from mininet.node import (Node, Host, OVSKernelSwitch, DefaultController,
+                          Controller)
 from mininet.nodelib import NAT
 #from mininet.link import Link, Intf
-from mininet.util import ( quietRun, fixLimits, numCores, ensureRoot,
-                           macColonHex, ipStr, ipParse, netParse, ipAdd,
-                           waitListening, BaseString, encode )
+from mininet.util import (quietRun, fixLimits, numCores, ensureRoot,
+                          macColonHex, ipStr, ipParse, netParse, ipAdd,
+                          waitListening, BaseString, encode)
 from mininet.term import cleanUpScreens, makeTerms
 
 from mininet.link import (Intf, TCIntf)
@@ -130,20 +131,19 @@ from mininet.net import VERSION as MININET_VERSION
 # Distrinet version
 VERSION = "2.0 (Mininet {})".format(MININET_VERSION)
 
-from mininet.net import Mininet
 
-
-class Distrinet( Mininet ):
+class Distrinet(Mininet):
     "Network emulation with hosts spawned in network namespaces."
-    def __init__( self, topo=None, switch=LxcSwitch, host=LxcNode,
-                  controller=LxcRemoteController, link=CloudLink, intf=TCIntf,
-                  mapper=None,
-                  build=True, xterms=False, cleanup=False, ipBase='10.0.0.0/8',
-                  adminIpBase='192.168.0.1/8',
-                  autoSetMacs=False, autoPinCpus=False,
-                  listenPort=None, waitConnected=False, waitConnectionTimeout=5, 
-                  jump=None, user="root", client_keys=None, master=None, pub_id=None,
-                  **kwargs):
+
+    def __init__(self, topo=None, switch=LxcSwitch, host=LxcNode,
+                 controller=LxcRemoteController, link=CloudLink, intf=TCIntf,
+                 mapper=None,
+                 build=True, xterms=False, cleanup=False, ipBase='10.0.0.0/8',
+                 adminIpBase='192.168.0.1/8',
+                 autoSetMacs=False, autoPinCpus=False,
+                 listenPort=None, waitConnected=False, waitConnectionTimeout=5,
+                 jump=None, user="root", client_keys=None, master=None, pub_id=None,
+                 **kwargs):
         """Create Mininet object.
            topo: Topo (topology) object or None
            switch: default Switch class
@@ -173,15 +173,14 @@ class Distrinet( Mininet ):
         self.link = link
         self.intf = intf
         self.ipBase = ipBase
-        self.ipBaseNum, self.prefixLen = netParse( self.ipBase )
-        hostIP = ( 0xffffffff >> self.prefixLen ) & self.ipBaseNum
+        self.ipBaseNum, self.prefixLen = netParse(self.ipBase)
+        hostIP = (0xffffffff >> self.prefixLen) & self.ipBaseNum
         # Start for address allocation
         self.nextIP = hostIP if hostIP > 0 else 1
 
-
         self.adminIpBase = adminIpBase
-        self.adminIpBaseNum, self.adminPrefixLen = netParse( self.adminIpBase )
-        adminIP = ( 0xffffffff >> self.adminPrefixLen ) & self.adminIpBaseNum
+        self.adminIpBaseNum, self.adminPrefixLen = netParse(self.adminIpBase)
+        adminIP = (0xffffffff >> self.adminPrefixLen) & self.adminIpBaseNum
         # Start for address allocation
         self.adminNextIP = adminIP if adminIP > 0 else 1
 
@@ -206,13 +205,13 @@ class Distrinet( Mininet ):
         self.links = []
 
         self.loop = asyncio.get_event_loop()
+
         def runforever(loop):
-            time.sleep(0.001)       ### DSA - WTF ?????????????
+            time.sleep(0.001)  # DSA - WTF ?????????????
             loop.run_forever()
 
         self.thread = Thread(target=runforever, args=(self.loop,))
         self.thread.start()
-
 
         self.jump = jump
         self.user = user
@@ -220,13 +219,12 @@ class Distrinet( Mininet ):
 
         self.client_keys = client_keys
         self.masterhost = master
-        _info ("Connecting to master node\n")
-        self.masterSsh = ASsh(loop=self.loop, host=self.masterhost, username=self.user, bastion=self.jump, client_keys=self.client_keys)
+        _info("Connecting to master node\n")
+        self.masterSsh = ASsh(loop=self.loop, host=self.masterhost,
+                              username=self.user, bastion=self.jump, client_keys=self.client_keys)
         self.masterSsh.connect()
         self.masterSsh.waitConnected()
-        _info ("connected to master node\n")
-
-
+        _info("connected to master node\n")
 
         self.nameToNode = {}  # name to Node (Host/Switch) objects
 
@@ -239,129 +237,128 @@ class Distrinet( Mininet ):
             self.build()
 
     # DSA - OK
-    def addHost( self, name, cls=None, **params ):
+    def addHost(self, name, cls=None, **params):
         """Add host.
            name: name of host to add
            cls: custom host class/constructor (optional)
            params: parameters for host
            returns: added host"""
         # Default IP and MAC addresses
-        defaults = { 'ip': ipAdd( self.nextIP,
-                                  ipBaseNum=self.ipBaseNum,
-                                  prefixLen=self.prefixLen ) +
-                                  '/%s' % self.prefixLen}
+        defaults = {'ip': ipAdd(self.nextIP,
+                                ipBaseNum=self.ipBaseNum,
+                                prefixLen=self.prefixLen) +
+                    '/%s' % self.prefixLen}
         if "image" in self.topo.nodeInfo(name):
-            defaults.update({"image":self.topo.nodeInfo(name)["image"]})
+            defaults.update({"image": self.topo.nodeInfo(name)["image"]})
 
         # XXX DSA - doesn't make sense to generate MAC automatically here, we
         # keep for compatibility prurpose but never use it...
         if self.autoSetMacs:
-            defaults[ 'mac' ] = macColonHex( self.nextIP )
+            defaults['mac'] = macColonHex(self.nextIP)
         if self.autoPinCpus:
             raise Exception("to be implemented")
 #            defaults[ 'cores' ] = self.nextCore
 #            self.nextCore = ( self.nextCore + 1 ) % self.numCores
         self.nextIP += 1
-        defaults.update( params )
+        defaults.update(params)
 
         if not cls:
             cls = self.host
 
         if self.mapper:
-            defaults.update({"target":self.mapper.place(name)})
+            defaults.update({"target": self.mapper.place(name)})
 
-        h = cls(name=name, **defaults )
-        self.hosts.append( h )
-        self.nameToNode[ name ] = h
+        h = cls(name=name, **defaults)
+        self.hosts.append(h)
+        self.nameToNode[name] = h
         return h
 
     # DSA - OK
-    def addSwitch( self, name, cls=None, **params ):
+    def addSwitch(self, name, cls=None, **params):
         """Add switch.
            name: name of switch to add
            cls: custom switch class/constructor (optional)
            returns: added switch
            side effect: increments listenPort ivar ."""
-        defaults = { 'listenPort': self.listenPort}
+        defaults = {'listenPort': self.listenPort}
 
         if "image" in self.topo.nodeInfo(name):
-            defaults.update({"image":self.topo.nodeInfo(name)})
+            defaults.update({"image": self.topo.nodeInfo(name)})
         else:
-            error ("we are missing an image for {} \n".format(name))
+            error("we are missing an image for {} \n".format(name))
             exit()
-        
-        defaults.update( params )
-       
+
+        defaults.update(params)
+
         if not cls:
             cls = self.switch
 
-
         if self.mapper:
-            defaults.update({"target":self.mapper.place(name)})
+            defaults.update({"target": self.mapper.place(name)})
 
-        sw = cls(name=name, **defaults )
-        self.switches.append( sw )
-        self.nameToNode[ name ] = sw
+        sw = cls(name=name, **defaults)
+        self.switches.append(sw)
+        self.nameToNode[name] = sw
         return sw
 
-    def delSwitch( self, switch ):
+    def delSwitch(self, switch):
         "Delete a switch"
-        self.delNode( switch, nodes=self.switches )
+        self.delNode(switch, nodes=self.switches)
 
     # DSA - OK
-    def addController( self, name='c0', controller=None, **params ):
+    def addController(self, name='c0', controller=None, **params):
         """Add controller.
            controller: Controller class
            params: Parameters for the controller"""
         # Get controller class
-        params.update({'pub_id':self.pub_id})
+        params.update({'pub_id': self.pub_id})
         if not controller:
             controller = self.controller
-        controller_new = controller(name=name, 
-                    loop=self.loop,
-                    master=self.masterSsh,
-                    username=self.user,
-                    bastion=self.jump,
-                    client_keys=self.client_keys,
-                **params)
+        controller_new = controller(name=name,
+                                    loop=self.loop,
+                                    master=self.masterSsh,
+                                    username=self.user,
+                                    bastion=self.jump,
+                                    client_keys=self.client_keys,
+                                    **params)
         self.controllers.append(controller_new)
-        self.nameToNode[ name ] = controller_new
-        
+        self.nameToNode[name] = controller_new
+
         return controller_new
 
-    def delController( self, controller ):
+    def delController(self, controller):
         """Delete a controller
            Warning - does not reconfigure switches, so they
            may still attempt to connect to it!"""
-        self.delNode( controller )
+        self.delNode(controller)
 
-    def addNAT( self, name='nat0', connect=True, inNamespace=False,
-                **params):
+    def addNAT(self, name='nat0', connect=True, inNamespace=False,
+               **params):
         """Add a NAT to the Mininet network
            name: name of NAT node
            connect: switch to connect to | True (s1) | None
            inNamespace: create in a network namespace
            params: other NAT node params, notably:
                ip: used as default gateway address"""
-        nat = self.addHost( name, cls=NAT, inNamespace=inNamespace,
-                            subnet=self.ipBase, **params )
+        nat = self.addHost(name, cls=NAT, inNamespace=inNamespace,
+                           subnet=self.ipBase, **params)
         # find first switch and create link
         if connect:
-            if not isinstance( connect, Node ):
+            if not isinstance(connect, Node):
                 # Use first switch if not specified
-                connect = self.switches[ 0 ]
+                connect = self.switches[0]
             # Connect the nat to the switch
-            self.addLink( nat, connect )
+            self.addLink(nat, connect)
             # Set the default route on hosts
-            natIP = nat.params[ 'ip' ].split('/')[ 0 ]
+            natIP = nat.params['ip'].split('/')[0]
             for host in self.hosts:
                 if host.inNamespace:
-                    host.setDefaultRoute( 'via %s' % natIP )
+                    host.setDefaultRoute('via %s' % natIP)
         return nat
 
     # DSA - OK
-    def addLink( self, node1, node2, port1=None, port2=None,
-                 cls=None, **params ):
+    def addLink(self, node1, node2, port1=None, port2=None,
+                cls=None, **params):
         """"Add a link from node1 to node2
             node1: source node (or name)
             node2: dest node (or name)
@@ -371,79 +368,80 @@ class Distrinet( Mininet ):
             params: additional link params (optional)
             returns: link object"""
         # Accept node objects or names
-        node1 = node1 if not isinstance( node1, BaseString ) else self[ node1 ]
-        node2 = node2 if not isinstance( node2, BaseString ) else self[ node2 ]
+        node1 = node1 if not isinstance(node1, BaseString) else self[node1]
+        node2 = node2 if not isinstance(node2, BaseString) else self[node2]
 
-        options = dict( params )
+        options = dict(params)
 
         # Port is optional
         if port1 is not None:
-            options.setdefault( 'port1', port1 )
+            options.setdefault('port1', port1)
         if port2 is not None:
-            options.setdefault( 'port2', port2 )
+            options.setdefault('port2', port2)
         if self.intf is not None:
-            options.setdefault( 'intf', self.intf )
+            options.setdefault('intf', self.intf)
 
         # Set default MAC - this should probably be in Link
-        options.setdefault( 'addr1', self.randMac() )
-        options.setdefault( 'addr2', self.randMac() )
-       
+        options.setdefault('addr1', self.randMac())
+        options.setdefault('addr2', self.randMac())
+
         params1 = None
         params2 = None
         if self.mapper:
             lstr = (str(node1), str(node2))
-            placement = self.mapper.placeLink( lstr)
+            placement = self.mapper.placeLink(lstr)
             params1 = placement[0]
             params2 = placement[1]
 
 
-##        # define the VXLAN id for the link
+# define the VXLAN id for the link
 ##        options.setdefault("link_id", self.nextLinkId)
-##        self.nextLinkId += 1 
+##        self.nextLinkId += 1
 
         cls = self.link if cls is None else cls
-        link = cls( node1=node1, node2=node2, params1=params1, params2=params2, **options )
-        self.links.append( link )
+        link = cls(node1=node1, node2=node2, params1=params1,
+                   params2=params2, **options)
+        self.links.append(link)
         return link
 
-    def delLink( self, link ):
+    def delLink(self, link):
         "Remove a link from this network"
         raise Exception("Not implementedd")
         link.delete()
-        self.links.remove( link )
+        self.links.remove(link)
 
-    def delLinkBetween( self, node1, node2, index=0, allLinks=False ):
+    def delLinkBetween(self, node1, node2, index=0, allLinks=False):
         """Delete link(s) between node1 and node2
            index: index of link to delete if multiple links (0)
            allLinks: ignore index and delete all such links (False)
            returns: deleted link(s)"""
-        links = self.linksBetween( node1, node2 )
+        links = self.linksBetween(node1, node2)
         if not allLinks:
-            links = [ links[ index ] ]
+            links = [links[index]]
         for link in links:
-            self.delLink( link )
+            self.delLink(link)
         return links
 
-    def configHosts( self ):
+    def configHosts(self):
         "Configure a set of hosts."
         for host in self.hosts:
-            info( host.name + ' ' )
+            info(host.name + ' ')
             intf = host.defaultIntf()
             if intf:
                 host.configDefault()
             else:
                 # Don't configure nonexistent intf
-                host.configDefault( ip=None, mac=None )
+                host.configDefault(ip=None, mac=None)
             # You're low priority, dude!
             # BL: do we want to do this here or not?
             # May not make sense if we have CPU lmiting...
             # quietRun( 'renice +18 -p ' + repr( host.pid ) )
             # This may not be the right place to do this, but
             # it needs to be done somewhere.
-        info( '\n' )
+        info('\n')
 
     # DSA - OK
-    def buildFromTopo( self, topo=None ):
+    def buildFromTopo(self, topo=None):
         """Build mininet from a topology object
            At the end of this function, everything should be connected
            and up."""
@@ -453,103 +451,107 @@ class Distrinet( Mininet ):
         if self.cleanup:
             pass
 
-        info( '*** Creating network\n' )
+        info('*** Creating network\n')
 
         bastion = self.jump
         waitStart = False
-        _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen), self.adminPrefixLen)
+        _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum,
+                                   prefixLen=self.adminPrefixLen), self.adminPrefixLen)
         self.adminNextIP += 1
-        self.host.createMasterAdminNetwork(self.masterSsh, brname="admin-br", ip=_ip)
-        _info (" admin network created on {}\n".format(self.masterhost))
-
+        self.host.createMasterAdminNetwork(
+            self.masterSsh, brname="admin-br", ip=_ip)
+        _info(" admin network created on {}\n".format(self.masterhost))
 
         assert (isinstance(self.controllers, list))
 
         if not self.controllers and self.controller:
             # Add a default controller
-            info( '*** Adding controller\n' )
+            info('*** Adding controller\n')
             classes = self.controller
-            if not isinstance( classes, list ):
-                classes = [ classes ]
-            for i, cls in enumerate( classes ):
+            if not isinstance(classes, list):
+                classes = [classes]
+            for i, cls in enumerate(classes):
                 # Allow Controller objects because nobody understands partial()
-                if isinstance( cls, Controller ):
-                    self.addController( cls )
+                if isinstance(cls, Controller):
+                    self.addController(cls)
                 else:
-                    self.addController( 'c%d' % i, cls )
+                    self.addController('c%d' % i, cls)
 
 #        from assh import ASsh
         # prepare SSH connection to the master
 
-        info( '*** Adding hosts:\n' )
+        info('*** Adding hosts:\n')
 
         # == Hosts ===========================================================
         for hostName in topo.hosts():
-            _ip = "{}/{}".format(ipAdd( self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen),self.adminPrefixLen)
+            _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum,
+                                       prefixLen=self.adminPrefixLen), self.adminPrefixLen)
             self.adminNextIP += 1
 #            __ip= newAdminIp(admin_ip)
-            self.addHost( name=hostName,
-                    admin_ip= _ip,
-                    loop=self.loop,
-                    master=self.masterSsh,
-                    username=self.user,
-                    bastion=bastion,
-                    client_keys=self.client_keys,
-                    waitStart=waitStart,
-                    **topo.nodeInfo( hostName ))
-            info( hostName + ' ' )
+            self.addHost(name=hostName,
+                         admin_ip=_ip,
+                         loop=self.loop,
+                         master=self.masterSsh,
+                         username=self.user,
+                         bastion=bastion,
+                         client_keys=self.client_keys,
+                         waitStart=waitStart,
+                         **topo.nodeInfo(hostName))
+            info(hostName + ' ')
 
-        info( '\n*** Adding switches:\n' )
+        info('\n*** Adding switches:\n')
         for switchName in topo.switches():
-            _ip = "{}/{}".format(ipAdd( self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen),self.adminPrefixLen)
+            _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum,
+                                       prefixLen=self.adminPrefixLen), self.adminPrefixLen)
             self.adminNextIP += 1
-            self.addSwitch( name=switchName,
-                    admin_ip=_ip,
-                    loop=self.loop,
-                    master=self.masterSsh,
-                    username=self.user,
-                    bastion=bastion,
-                    client_keys=self.client_keys,
-                    waitStart=waitStart,
-                    **topo.nodeInfo( switchName ))
-            info( switchName + ' ' )
-
+            self.addSwitch(name=switchName,
+                           admin_ip=_ip,
+                           loop=self.loop,
+                           master=self.masterSsh,
+                           username=self.user,
+                           bastion=bastion,
+                           client_keys=self.client_keys,
+                           waitStart=waitStart,
+                           **topo.nodeInfo(switchName))
+            info(switchName + ' ')
 
         if not waitStart:
             nodes = self.hosts + self.switches
 
-            _info ("[starting\n")
+            _info("[starting\n")
             for node in nodes:
-                _info ("connectTarget {} ".format( node.name))
+                _info("connectTarget {} ".format(node.name))
                 node.connectTarget()
 
             for node in nodes:
                 node.waitConnectedTarget()
-                _info ("connectedTarget {} ".format( node.name))
+                _info("connectedTarget {} ".format(node.name))
 
             for node in nodes:
-                _info ("createContainer {} ".format( node.name))
+                _info("createContainer {} ".format(node.name))
                 node.createContainer()
 
             for node in nodes:
                 node.waitCreated()
-                _info ("createdContainer {} ".format(node.name))
-           
+                _info("createdContainer {} ".format(node.name))
+
             for node in nodes:
-                _info ("create admin interface {} ".format( node.name))
-                node.addContainerInterface(intfName="admin", brname="admin-br", wait=False)
+                _info("create admin interface {} ".format(node.name))
+                node.addContainerInterface(
+                    intfName="admin", brname="admin-br", wait=False)
 
             for node in nodes:
                 node.targetSshWaitOutput()
-                _info ("admin interface created on {} ".format( node.name))
-            _info ("\n")
+                _info("admin interface created on {} ".format(node.name))
+            _info("\n")
 
             cmds = []
             for node in nodes:
-                cmds = cmds + node.connectToAdminNetwork(master=node.masternode.host, target=node.target, link_id=CloudLink.newLinkId(), admin_br="admin-br", wait=False)
-            if len (cmds) > 0:
+                cmds = cmds + node.connectToAdminNetwork(master=node.masternode.host, target=node.target,
+                                                         link_id=CloudLink.newLinkId(), admin_br="admin-br", wait=False)
+            if len(cmds) > 0:
                 cmd = ';'.join(cmds)
-                self.masterSsh.cmd(cmd) 
+                self.masterSsh.cmd(cmd)
 
             for node in nodes:
                 node.configureContainer(wait=False)
@@ -557,93 +559,93 @@ class Distrinet( Mininet ):
                 node.targetSshWaitOutput()
 
             for node in nodes:
-                _info ("connecting {} ".format( node.name))
+                _info("connecting {} ".format(node.name))
                 node.connect()
 
             for node in nodes:
                 node.waitConnected()
-                _info ("connected {} ".format( node.name))
+                _info("connected {} ".format(node.name))
 
             for node in nodes:
-                _info ("startshell {} ".format( node.name) )
+                _info("startshell {} ".format(node.name))
                 node.asyncStartShell()
             for node in nodes:
                 node.waitStarted()
-                _info ("startedshell {}".format( node.name))
+                _info("startedshell {}".format(node.name))
 
             for node in nodes:
-                _info ("finalize {}".format( node.name))
+                _info("finalize {}".format(node.name))
                 node.finalizeStartShell()
-            _info ("\n")
+            _info("\n")
 
-        info( '\n*** Adding links:\n' )
+        info('\n*** Adding links:\n')
         for srcName, dstName, params in topo.links(
-                sort=True, withInfo=True ):
-            self.addLink( **params )
-            info( '(%s, %s) ' % ( srcName, dstName ) )
-        info( '\n' )
+                sort=True, withInfo=True):
+            self.addLink(**params)
+            info('(%s, %s) ' % (srcName, dstName))
+        info('\n')
 
-    def configureControlNetwork( self ):
+    def configureControlNetwork(self):
         "Control net config hook: override in subclass"
-        raise Exception( 'configureControlNetwork: '
-                         'should be overriden in subclass', self )
+        raise Exception('configureControlNetwork: '
+                        'should be overriden in subclass', self)
 
-    def build( self ):
+    def build(self):
         "Build mininet."
         if self.topo:
-            self.buildFromTopo( self.topo )
+            self.buildFromTopo(self.topo)
 
-##            self.configureControlNetwork()
-        info( '*** Configuring hosts\n' )
+# self.configureControlNetwork()
+        info('*** Configuring hosts\n')
         self.configHosts()
-##        if self.xterms:
-##            self.startTerms()
+# if self.xterms:
+# self.startTerms()
 #        if self.autoStaticArp:
 #            self.staticArp()
         self.built = True
 
-    def startTerms( self ):
+    def startTerms(self):
         "Start a terminal for each node."
         if 'DISPLAY' not in os.environ:
-            error( "Error starting terms: Cannot connect to display\n" )
+            error("Error starting terms: Cannot connect to display\n")
             return
-        info( "*** Running terms on %s\n" % os.environ[ 'DISPLAY' ] )
+        info("*** Running terms on %s\n" % os.environ['DISPLAY'])
         cleanUpScreens()
-        self.terms += makeTerms( self.controllers, 'controller' )
-        self.terms += makeTerms( self.switches, 'switch' )
-        self.terms += makeTerms( self.hosts, 'host' )
+        self.terms += makeTerms(self.controllers, 'controller')
+        self.terms += makeTerms(self.switches, 'switch')
+        self.terms += makeTerms(self.hosts, 'host')
 
-    def stopXterms( self ):
+    def stopXterms(self):
         "Kill each xterm."
         for term in self.terms:
-            os.kill( term.pid, signal.SIGKILL )
+            os.kill(term.pid, signal.SIGKILL)
         cleanUpScreens()
 
-    def staticArp( self ):
+    def staticArp(self):
         "Add all-pairs ARP entries to remove the need to handle broadcast."
         for src in self.hosts:
             for dst in self.hosts:
                 if src != dst:
-                    src.setARP( ip=dst.IP(), mac=dst.MAC() )
+                    src.setARP(ip=dst.IP(), mac=dst.MAC())
 
     # DSA - OK
-    def start( self ):
+    def start(self):
         "Start controller and switches."
         if not self.built:
             self.build()
-        info( '*** Starting controller\n' )
+        info('*** Starting controller\n')
         for controller in self.controllers:
-            info( controller.name + ' ')
+            info(controller.name + ' ')
             controller.start()
-        info( '\n' )
-        info( '*** Starting %s switches\n' % len( self.switches ) )
+        info('\n')
+        info('*** Starting %s switches\n' % len(self.switches))
         for switch in self.switches:
-            info( switch.name + ' ')
-            switch.start( self.controllers )
+            info(switch.name + ' ')
+            switch.start(self.controllers)
         started = {}
         for switch in self.switches:
             success = switch.batchStartup([switch])
-            started.update( { s: s for s in success } )
+            started.update({s: s for s in success})
 #        for swclass, switches in groupby(
 #                sorted( self.switches,
 #                        key=lambda s: str( type( s ) ) ), type ):
@@ -651,24 +653,23 @@ class Distrinet( Mininet ):
 #            if hasattr( swclass, 'batchStartup' ):
 #                success = swclass.batchStartup( switches )
 #                started.update( { s: s for s in success } )
-        info( '\n' )
+        info('\n')
         if self.waitConn:
             self.waitConnected()
 
-
-    def stop( self ):
+    def stop(self):
         "Stop the switches, hosts and controller(s) "
         if self.terms:
-            info( '*** Stopping %i terms\n' % len( self.terms ) )
+            info('*** Stopping %i terms\n' % len(self.terms))
             self.stopXterms()
-        info( '*** Stopping %i links\n' % len( self.links ) )
+        info('*** Stopping %i links\n' % len(self.links))
         for link in self.links:
-            info( '.' )
+            info('.')
             link.stop()
-        info( '\n' )
-        info( '*** Stopping %i switches\n' % len( self.switches ) )
+        info('\n')
+        info('*** Stopping %i switches\n' % len(self.switches))
         stopped = {}
-########        for switch in self.switches:
+# for switch in self.switches:
 ########           success = switch.batchShutdown([switch])
 ########            stopped.update( { s: s for s in success } )
 #        for swclass, switches in groupby(
@@ -679,126 +680,126 @@ class Distrinet( Mininet ):
 #                success = swclass.batchShutdown( switches )
 #                stopped.update( { s: s for s in success } )
         for switch in self.switches:
-            info( switch.name + ' ' )
+            info(switch.name + ' ')
             if switch not in stopped:
                 switch.stop()
             switch.terminate()
-        info( '\n' )
-        info( '*** Stopping %i hosts\n' % len( self.hosts ) )
+        info('\n')
+        info('*** Stopping %i hosts\n' % len(self.hosts))
         for host in self.hosts:
-            info( host.name + ' ' )
+            info(host.name + ' ')
             host.terminate()
 
-        info( '*** Stopping %i controllers\n' % len( self.controllers ) )
+        info('*** Stopping %i controllers\n' % len(self.controllers))
         for controller in self.controllers:
-            info( controller.name + ' ' )
+            info(controller.name + ' ')
             controller.stop()
-        info( '\n' )
-       
-        info( '*** cleaning master\n' )
+        info('\n')
+
+        info('*** cleaning master\n')
         # XXX DSA need to find something nicer
         for node in self.hosts + self.switches + self.controllers:
-            _info ("wait {} ".format( node ))
+            _info("wait {} ".format(node))
             node.targetSshWaitOutput()
             for device in node.devicesMaster:
-                _info ("delete device {} on master ".format(device))
+                _info("delete device {} on master ".format(device))
                 self.masterSsh.cmd("ip link delete {} ".format(device))
-            _info ("\n")
-        _info ("\n")
+            _info("\n")
+        _info("\n")
         self.loop.stop()
-        info( '\n*** Done\n' )
+        info('\n*** Done\n')
 
     # XXX These test methods should be moved out of this class.
     # Probably we should create a tests.py for them
 
-    def runCpuLimitTest( self, cpu, duration=5 ):
+    def runCpuLimitTest(self, cpu, duration=5):
         """run CPU limit test with 'while true' processes.
         cpu: desired CPU fraction of each host
         duration: test duration in seconds (integer)
         returns a single list of measured CPU fractions as floats.
         """
         pct = cpu * 100
-        info( '*** Testing CPU %.0f%% bandwidth limit\n' % pct )
+        info('*** Testing CPU %.0f%% bandwidth limit\n' % pct)
         hosts = self.hosts
-        cores = int( quietRun( 'nproc' ) )
+        cores = int(quietRun('nproc'))
         # number of processes to run a while loop on per host
-        num_procs = int( ceil( cores * cpu ) )
+        num_procs = int(ceil(cores * cpu))
         pids = {}
         for h in hosts:
-            pids[ h ] = []
-            for _core in range( num_procs ):
-                h.cmd( 'while true; do a=1; done &' )
-                pids[ h ].append( h.cmd( 'echo $!' ).strip() )
+            pids[h] = []
+            for _core in range(num_procs):
+                h.cmd('while true; do a=1; done &')
+                pids[h].append(h.cmd('echo $!').strip())
         outputs = {}
         time = {}
         # get the initial cpu time for each host
         for host in hosts:
-            outputs[ host ] = []
-            with open( '/sys/fs/cgroup/cpuacct/%s/cpuacct.usage' %
-                       host, 'r' ) as f:
-                time[ host ] = float( f.read() )
-        for _ in range( duration ):
-            sleep( 1 )
+            outputs[host] = []
+            with open('/sys/fs/cgroup/cpuacct/%s/cpuacct.usage' %
+                      host, 'r') as f:
+                time[host] = float(f.read())
+        for _ in range(duration):
+            sleep(1)
             for host in hosts:
-                with open( '/sys/fs/cgroup/cpuacct/%s/cpuacct.usage' %
-                           host, 'r' ) as f:
-                    readTime = float( f.read() )
-                outputs[ host ].append( ( ( readTime - time[ host ] )
-                                        / 1000000000 ) / cores * 100 )
-                time[ host ] = readTime
+                with open('/sys/fs/cgroup/cpuacct/%s/cpuacct.usage' %
+                          host, 'r') as f:
+                    readTime = float(f.read())
+                outputs[host].append(((readTime - time[host])
+                                      / 1000000000) / cores * 100)
+                time[host] = readTime
         for h, pids in pids.items():
             for pid in pids:
-                h.cmd( 'kill -9 %s' % pid )
+                h.cmd('kill -9 %s' % pid)
         cpu_fractions = []
         for _host, outputs in outputs.items():
             for pct in outputs:
-                cpu_fractions.append( pct )
-        output( '*** Results: %s\n' % cpu_fractions )
+                cpu_fractions.append(pct)
+        output('*** Results: %s\n' % cpu_fractions)
         return cpu_fractions
 
     # BL: I think this can be rewritten now that we have
     # a real link class.
-    def configLinkStatus( self, src, dst, status ):
+    def configLinkStatus(self, src, dst, status):
         """Change status of src <-> dst links.
            src: node name
            dst: node name
            status: string {up, down}"""
         if src not in self.nameToNode:
-            error( 'src not in network: %s\n' % src )
+            error('src not in network: %s\n' % src)
         elif dst not in self.nameToNode:
-            error( 'dst not in network: %s\n' % dst )
+            error('dst not in network: %s\n' % dst)
         else:
-            src = self.nameToNode[ src ]
-            dst = self.nameToNode[ dst ]
-            connections = src.connectionsTo( dst )
-            if len( connections ) == 0:
-                error( 'src and dst not connected: %s %s\n' % ( src, dst) )
+            src = self.nameToNode[src]
+            dst = self.nameToNode[dst]
+            connections = src.connectionsTo(dst)
+            if len(connections) == 0:
+                error('src and dst not connected: %s %s\n' % (src, dst))
             for srcIntf, dstIntf in connections:
-                result = srcIntf.ifconfig( status )
+                result = srcIntf.ifconfig(status)
                 if result:
-                    error( 'link src status change failed: %s\n' % result )
-                result = dstIntf.ifconfig( status )
+                    error('link src status change failed: %s\n' % result)
+                result = dstIntf.ifconfig(status)
                 if result:
-                    error( 'link dst status change failed: %s\n' % result )
+                    error('link dst status change failed: %s\n' % result)
 
-    def interact( self ):
+    def interact(self):
         "Start network and run our simple CLI."
         self.start()
-        result = CLI( self )
+        result = CLI(self)
         self.stop()
         return result
 
     inited = False
 
     @classmethod
-    def init( cls ):
+    def init(cls):
         "Initialize Mininet"
         if cls.inited:
             return
         cls.inited = True
 
 
-class MininetWithControlNet( Mininet ):
+class MininetWithControlNet(Mininet):
 
     """Control network support:
 
@@ -826,46 +827,44 @@ class MininetWithControlNet( Mininet ):
           control network which every node's control interface is
           attached to."""
 
-    def configureControlNetwork( self ):
+    def configureControlNetwork(self):
         "Configure control network."
         self.configureRoutedControlNetwork()
 
     # We still need to figure out the right way to pass
     # in the control network location.
 
-    def configureRoutedControlNetwork( self, ip='192.168.123.1',
-                                       prefixLen=16 ):
+    def configureRoutedControlNetwork(self, ip='192.168.123.1',
+                                      prefixLen=16):
         """Configure a routed control network on controller and switches.
            For use with the user datapath only right now."""
-        controller = self.controllers[ 0 ]
-        info( controller.name + ' <->' )
+        controller = self.controllers[0]
+        info(controller.name + ' <->')
         cip = ip
-        snum = ipParse( ip )
+        snum = ipParse(ip)
         for switch in self.switches:
-            info( ' ' + switch.name )
-            link = self.link( switch, controller, port1=0 )
+            info(' ' + switch.name)
+            link = self.link(switch, controller, port1=0)
             sintf, cintf = link.intf1, link.intf2
             switch.controlIntf = sintf
             snum += 1
-            while snum & 0xff in [ 0, 255 ]:
+            while snum & 0xff in [0, 255]:
                 snum += 1
-            sip = ipStr( snum )
-            cintf.setIP( cip, prefixLen )
-            sintf.setIP( sip, prefixLen )
-            controller.setHostRoute( sip, cintf )
-            switch.setHostRoute( cip, sintf )
-        info( '\n' )
-        info( '*** Testing control network\n' )
+            sip = ipStr(snum)
+            cintf.setIP(cip, prefixLen)
+            sintf.setIP(sip, prefixLen)
+            controller.setHostRoute(sip, cintf)
+            switch.setHostRoute(cip, sintf)
+        info('\n')
+        info('*** Testing control network\n')
         while not cintf.isUp():
-            info( '*** Waiting for', cintf, 'to come up\n' )
-            sleep( 1 )
+            info('*** Waiting for', cintf, 'to come up\n')
+            sleep(1)
         for switch in self.switches:
             while not sintf.isUp():
-                info( '*** Waiting for', sintf, 'to come up\n' )
-                sleep( 1 )
-            if self.ping( hosts=[ switch, controller ] ) != 0:
-                error( '*** Error: control network test failed\n' )
-                exit( 1 )
-        info( '\n' )
-
-
+                info('*** Waiting for', sintf, 'to come up\n')
+                sleep(1)
+            if self.ping(hosts=[switch, controller]) != 0:
+                error('*** Error: control network test failed\n')
+                exit(1)
+        info('\n')

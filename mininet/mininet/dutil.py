@@ -1,8 +1,10 @@
 from mininet.provision.provision import Provision
 from mininet.log import info, error, debug, output, warn
 
+
 def _info(*args, **kwargs):
     pass
+
 
 def default_images(*args, **kwargs):
     conf = Provision.get_configurations()
@@ -11,9 +13,10 @@ def default_images(*args, **kwargs):
 
     topo = kwargs['topo']
     # TODO: you need to specify cpu for LXD and cores for mininet API
-    sopts={ "image":"switch","controller":"c0", 'pub_id':pub_id, "cpu":2, "memory":"1GB"}
-    hopts={ "image":"ubuntu", 'pub_id':pub_id, "cpu":2, "memory":"1GB"}
-    lopts={ "bw":100 } #, "delay":"10ms"}
+    sopts = {"image": "switch", "controller": "c0",
+             'pub_id': pub_id, "cpu": 2, "memory": "1GB"}
+    hopts = {"image": "ubuntu", 'pub_id': pub_id, "cpu": 2, "memory": "1GB"}
+    lopts = {"bw": 100}  # , "delay":"10ms"}
 
     topo.hopts.update(hopts)
     topo.sopts.update(sopts)
@@ -30,13 +33,14 @@ def default_images(*args, **kwargs):
         infos.update(topo.nodeInfo(n))
 
         topo.setNodeInfo(n, infos)
-    
+
     for l in topo.links():
-        src, dst = l[0],l[1]
+        src, dst = l[0], l[1]
         infos = {}
         infos.update(lopts)
         infos.update(topo.linkInfo(src=src, dst=dst))
         topo.setlinkInfo(src=src, dst=dst, info=infos)
+
 
 def makeFile(net, host, lines, filename, overwrite=True, wait=True):
     ln = 1
@@ -46,7 +50,7 @@ def makeFile(net, host, lines, filename, overwrite=True, wait=True):
         if overwrite and ln == 1:
             command = "%s > %s" % (command, filename)
         else:
-            command = "%s >> %s"% (command, filename)
+            command = "%s >> %s" % (command, filename)
         cmds.append(command)
 
     cmd = ";".join(cmds)
@@ -56,12 +60,14 @@ def makeFile(net, host, lines, filename, overwrite=True, wait=True):
     else:
         net.nameToNode[host].sendCmd(cmd)
 
+
 def makeHosts(topo, net, wait=True):
     lines = []
     for host in topo.hosts():
         lines.append("{} {}".format(net.nameToNode[host].IP(), host))
-    info (" >>> {} \n".format(lines))
+    info(" >>> {} \n".format(lines))
     for host in topo.hosts():
-        info (" Adding to host {}".format(lines))
-        makeFile(net=net, host=host, lines=lines, filename="/etc/hosts", overwrite=False, wait=wait)
-    info ("\n")
+        info(" Adding to host {}".format(lines))
+        makeFile(net=net, host=host, lines=lines,
+                 filename="/etc/hosts", overwrite=False, wait=wait)
+    info("\n")

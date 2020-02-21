@@ -1,6 +1,7 @@
 from subprocess import PIPE
 from mininet.log import info, error, debug, output, warn
-import asyncio, asyncssh
+import asyncio
+import asyncssh
 from functools import partial
 import time
 
@@ -8,10 +9,11 @@ from mininet.dutil import _info
 
 # XXX- TPT - why all the synchroneous time.sleep !?!? looks very wrong..
 
+
 class ASsh(object):
     def __init__(self, loop, host, port=22, username=None, bastion=None,
-                       bastion_port=22, client_keys=None,
-                       **params):
+                 bastion_port=22, client_keys=None,
+                 **params):
         # the node runs
         self.run = True
 
@@ -48,7 +50,6 @@ class ASsh(object):
         # port number to use
         self.connection_port = self.port
 
-
     def createTunnel(self):
         """
         Creates a tunnel with the bastion if needed (i.e., a bastion is
@@ -58,7 +59,7 @@ class ASsh(object):
             self.loop.create_task(self._tunnel(bastion=self.bastion,
                                                bastion_port=self.bastion_port,
                                                host=self.host, port=self.port))
-   
+
     async def _tunnel(self, bastion, host, bastion_port=22, port=22):
         """
         Establishes SSH local port forwarding to `host:port` via the bastion
@@ -82,13 +83,15 @@ class ASsh(object):
             SSH port number to use (default is 22).            
         """
 
-        connect = partial(asyncssh.connect, known_hosts=None, client_keys=self.client_keys)
+        connect = partial(asyncssh.connect, known_hosts=None,
+                          client_keys=self.client_keys)
         if self.username is not None:
             connect = partial(connect, username=self.username)
 
         async with connect(host=bastion, port=bastion_port) as conn:
             self.tunnel = await conn.forward_local_port('', 0, host, port)
-            _info ("tunnel {}:{}:{} {}@{}:{} \n".format(self.tunnel.get_port(), host, port, self.username, bastion, bastion_port))
+            _info("tunnel {}:{}:{} {}@{}:{} \n".format(
+                self.tunnel.get_port(), host, port, self.username, bastion, bastion_port))
             while self.run:
                 await asyncio.sleep(1)
 
@@ -116,8 +119,9 @@ class ASsh(object):
             self.createTunnel()
             # wait fot th tunnel to be created
             self.waitTunneled()
-  
-        task = self.loop.create_task(self._connect(host=self.connection_host, port=self.connection_port))
+
+        task = self.loop.create_task(self._connect(
+            host=self.connection_host, port=self.connection_port))
 
     async def _connect(self, host, port):
         """
@@ -130,7 +134,8 @@ class ASsh(object):
         port : int
             port number
         """
-        connect = partial(asyncssh.connect, known_hosts=None, client_keys=self.client_keys)
+        connect = partial(asyncssh.connect, known_hosts=None,
+                          client_keys=self.client_keys)
         if self.username is not None:
             connect = partial(connect, username=self.username)
 
@@ -141,7 +146,8 @@ class ASsh(object):
                     while self.run:
                         await asyncio.sleep(1)
             except Exception as e:
-                error ("Error for {}@{} via {}:{}: {} \n".format(self.username, self.host, self.bastion, port, e))
+                error("Error for {}@{} via {}:{}: {} \n".format(
+                    self.username, self.host, self.bastion, port, e))
 
     def waitConnected(self):
         """
@@ -165,7 +171,7 @@ class ASsh(object):
     def cmd(self, cmd):
         self.sendCmd(cmd)
         return self.waitOutput()
-    
+
     def waitAllOutput(self):
         while len(self.tasks) > 0:
             if self.tasks[0].done():
@@ -193,7 +199,6 @@ class ASsh(object):
         return process
 
     # XXX - SAME
-    def __str__( self ):
+    def __str__(self):
         "Abbreviated string representation"
         return self.host
-
