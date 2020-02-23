@@ -5,8 +5,12 @@ DIRNAME=$(dirname $0)
 GIT_ROOT=$(cd $DIRNAME/..; pwd -P)
 
 # what to test
-GIT_REPO=https://github.com/parmentelat/Distrinet.git
-GIT_BRANCH=thierry
+
+MININET_GIT_REPO=https://github.com/parmentelat/mininet.git
+MININET_GIT_BRANCH=thierry
+
+DISTRINET_GIT_REPO=https://github.com/parmentelat/Distrinet.git
+DISTRINET_GIT_BRANCH=thierry
 
 # the VM 
 DATE=$(date +'%Y-%m-%d')
@@ -27,7 +31,7 @@ BASE_IMAGE_URL=https://sourceforge.net/projects/osboxes/files/v/vb/59-U-u-svr/18
 # login=osboxes
 # password=osboxes.org
 
-BASE="ubuntu-18.04.3-server"
+BASE="ubuntu"
 BASE_IMAGE=$BASE.vdi
 
 
@@ -44,7 +48,7 @@ function download() {
     if [ -f DOWNLOAD ]; then
         echo DOWNLOAD already here
     else
-        curl -L -o DOWNLOAD $BASE_IMAGE_URL
+        curl -L -o DOWNLOAD ${BASE}.vdi_URL
     fi
 
     [ -d unwrap ] && { rm -rf unwrap; mkdir unwrap; cd unwrap; }
@@ -60,9 +64,9 @@ function provision() {
     VBoxManage modifyvm $VM --memory 1024 --vram 128
 
     # copy base image
-    [ -f $BASE_IMAGE ] || { echo $COMMAND needs $BASE_IMAGE; exit 1; }
-    echo "copying $BASE_IMAGE into $VM.vdi"
-    cp $BASE_IMAGE $VM.vdi
+    [ -f ${BASE}.vdi ] || { echo $COMMAND needs ${BASE}.vdi; exit 1; }
+    echo "copying ${BASE}.vdi into $VM.vdi"
+    cp ${BASE}.vdi $VM.vdi
     # give the copy a different uuid
     VBoxManage internalcommands sethduuid $VM.vdi
 
@@ -111,25 +115,44 @@ function do-ssh () {
     ssh -i mininet-keypair $USER@$IP "$@"
 }
 
+function setup-mininet() {
+    ssh -i mininet-keypair $USER@$IP << EOF
+        echo '* Creating mininet git repo'
+        [ -d mininet ] || git clone $MININET_GIT_REPO mininet
+        echo '* Checking out branch' $MININET_GIT_BRANCH
+        cd mininet
+        git checkout $MININET_GIT_BRANCH
+        echo '* Installing mininet'
+        ./util/install.sh -a
+EOF
+}
+
 function setup-distrinet() {
     ssh -i mininet-keypair $USER@$IP << EOF
-        # will move into the base image..        
-        # echo '* Installing pip3'
-        # dpkg -l python3-pip || apt-get install -y python3-pip
-        echo '* Creating git repo'
-        [ -d distrinet ] || git clone $GIT_REPO distrinet
-        echo '* Checking out branch' $GIT_BRANCH
+        echo '* Creating distrinet git repo'
+        [ -d distrinet ] || git clone $DISTRINET_GIT_REPO distrinet
+        echo '* Checking out branch' $DISTRINET_GIT_BRANCH
         cd distrinet
-        git checkout $GIT_BRANCH
+        git checkout $DISTRINET_GIT_BRANCH
         echo '* Installing distrinet'
         python3 setup.py install -e .
 EOF
 }
 
-function rsync-local() {
-    echo '* Pushing local sources via rsync'
-    (cd $GIT_ROOT; rsync --rsh="ssh -i virtualbox/mininet-keypair" -a --relative $(git ls-files) $USER@$IP:distrinet/)
-    echo '* Reinstalling'
+function rsync-local-mininet() {
+    echo '* Pushing local mininet sources via rsync'
+    local HERE=$(pwd -P)
+    # XXX that's where I have my own mininet repo
+    local MININET_ROOT="$GIT_ROOT/../mininet-vanilla"
+    (cd $MININET_ROOT; rsync --rsh="ssh -i $HERE/mininet-keypair" -a --relative $(git ls-files) $USER@$IP:mininet/)
+    echo '* no reinstallation done...'
+}
+
+function rsync-local-distrinet() {
+    echo '* Pushing local distrinet sources via rsync'
+    local HERE=$(pwd -P)
+    (cd $GIT_ROOT; rsync --rsh="ssh -i $HERE/mininet-keypair" -a --relative $(git ls-files) $USER@$IP:distrinet/)
+    echo '* Reinstalling distrinet'
     ssh -i mininet-keypair $USER@$IP << EOF
         cd distrinet
         python3 setup.py install -e .
@@ -147,9 +170,10 @@ function usage() {
 function main() {
 
     local opt
-    while getopts "n:h" opt; do
+    while getopts "n:b:h" opt; do
         case "${opt}" in
             n) VM=${OPTARG} ;;
+            b) BASE=${OPTARG} ;;
             *) usage ;;
         esac
     done
